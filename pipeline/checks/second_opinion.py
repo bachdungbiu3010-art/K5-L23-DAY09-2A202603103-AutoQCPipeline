@@ -40,5 +40,123 @@ from ..model_cache import get_preds  # noqa: F401
 
 
 def run(ds, cfg, preds=None):
-    # TODO
-    raise NotImplementedError("check second_opinion chưa làm")
+    issues = []
+    settings = cfg["second_opinion"]
+
+    if preds is None:
+        preds = get_preds(ds, cfg, "checker")
+
+    for image_path in ds.image_files():
+        stem = image_path.stem
+
+        if stem not in preds or not ds.label_path(stem).exists():
+            continue
+
+        size = ds.image_size(stem)
+        if size is None:
+            continue
+
+        image_width, image_height = size
+
+        # Đọc nhãn, giữ số dòng gốc cho cảnh báo nhãn thừa.
+        labels = []
+        for line_no, text in ds.read_label_lines(stem) or []:
+            try:
+                label = parse_yolo_line(text)
+            except (ValueError, OverflowError):
+                continue
+
+            if 0 <= label[0] < len(ds.classes):
+                labels.append((line_no, label))
+
+        # Chiều 1: từ dự đoán model tìm nhãn tương ứng.
+        for prediction in preds[stem]:
+            class_id, confidence, cx, cy, w, h = prediction
+
+            if confidence < settings["conf"]:
+                continue
+
+            area_px = (w * image_width) * (h * image_height)
+            if area_px < settings["min_area_px"]:
+                continue
+
+            model_box = (cx, cy, w, h)
+            candidates = []
+
+            for _, label in labels:
+                overlap = iou_xywh(model_box, label[1:])
+                if overlap >= settings["iou_missing"]:
+                    candidates.append((label[0], overlap))
+
+            code = None
+            overlap = None
+
+            if not candidates:
+                code = "POSSIBLE_MISSING"
+                message = "Model thấy vật nhưng chưa có khung nhãn khớp"
+
+            else:
+                same_class = [
+                    score
+                    for label_class, score in candidates
+                    if label_class == class_id
+                ]
+
+                if same_class:
+                    overlap = max(same_class)
+                    if overlap < settings["iou_loose"]:
+                        code = "POSSIBLE_LOOSE_BOX"
+                        message = "Nhãn cùng lớp nhưng khung khớp kém"
+                else:
+                    overlap = max(score for _, score in candidates)
+                    if overlap >= settings["iou_match"]:
+                        code = "POSSIBLE_WRONG_CLASS"
+                        message = "Khung khớp vị trí nhưng khác lớp model"
+
+            if code is not None:
+                extra = {"conf": confidence}
+                if overlap is not None:
+                    extra["iou"] = overlap
+
+                issues.append(
+                    Issue(
+                        "second_opinion",
+                        WARN,
+                        code,
+                        stem,
+                        message,
+                        extra=extra,
+                    )
+                )
+
+        # Chiều 2: từ từng nhãn tìm dự đoán model tương ứng.
+        # Dùng fp_conf riêng và không lọc diện tích.
+        matching_predictions = [
+            prediction
+            for prediction in preds[stem]
+            if prediction[1] >= settings["fp_conf"]
+        ]
+
+        for line_no, label in labels:
+            best_overlap = max(
+                (
+                    iou_xywh(label[1:], prediction[2:])
+                    for prediction in matching_predictions
+                ),
+                default=0.0,
+            )
+
+            if best_overlap < settings["iou_missing"]:
+                issues.append(
+                    Issue(
+                        "second_opinion",
+                        WARN,
+                        "POSSIBLE_FALSE_POS",
+                        stem,
+                        "Khung nhãn không khớp dự đoán nào của model",
+                        line=line_no,
+                        extra={"iou": best_overlap},
+                    )
+                )
+
+    return issues
