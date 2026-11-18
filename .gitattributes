@@ -4,3 +4,6 @@
 *.png binary
 *.JPG binary
 *.pt binary
+
+# Preserve exported label bytes so manifest hashes survive Git checkout.
+submission/export/clean_v1/labels/*.txt -text

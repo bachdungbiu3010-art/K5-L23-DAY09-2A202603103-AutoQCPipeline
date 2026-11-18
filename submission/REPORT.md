@@ -52,10 +52,12 @@ Hai hạn chế có bằng chứng: (1) ở ngưỡng đã chọn, recall khung 
 **Chưa chạy**: ưu tiên hoàn thiện phần lõi trước khi thực hiện thí nghiệm Colab. Chưa có bằng chứng để kết luận clean giúp model tốt hơn raw.
 
 ## 6. Quyết định và ghi chú AI/Videcode
-Giữ **Hold**, không tăng ngưỡng hoặc đổi ngân sách chỉ để đạt Release. Cần duyệt và xử lý tiếp cảnh báo tồn đọng, kiểm lại điểm mù; Release chỉ khi không còn lỗi bắt buộc và tỉ lệ ảnh cảnh báo chưa duyệt dưới 10%. CVAT và check thưởng: chưa làm. Repo GitHub public đã được xác minh; đang lưu commit và đẩy bài lên. Chưa nộp LMS.
+Giữ **Hold**, không tăng ngưỡng hoặc đổi ngân sách chỉ để đạt Release. Cần duyệt và xử lý tiếp cảnh báo tồn đọng, kiểm lại điểm mù; Release chỉ khi không còn lỗi bắt buộc và tỉ lệ ảnh cảnh báo chưa duyệt dưới 10%. CVAT và check thưởng: chưa làm. Repo GitHub public đã được xác minh; đã lưu 7 commit theo nhóm nội dung và đẩy lên. Chưa nộp LMS.
 
 - **Cách dùng AI/Videcode:** tôi cung cấp docstring và yêu cầu AI viết từng nhóm quy tắc cho 4 module, giải thích code, đọc lỗi và phân tích calibration. Sau đó ghép thành hàm đầy đủ; AI hỗ trợ tổng hợp báo cáo từ CSV/JSON.
 - **Cách kiểm chứng:** tôi nhập/lưu code trong VS Code, chạy kiểm thử từng phần và toàn bộ (79 passed), xem khoảng 10 ảnh, kiểm hai cặp gần trùng và chạy thí nghiệm gate ngân sách 0. Duyệt 80 ảnh trong pipeline là mô phỏng có sẵn, không phải tôi sửa thủ công 80 ảnh.
 - **Sai/thiếu và cách sửa:** hướng dẫn chèn code từng đoạn ban đầu chưa đủ rõ, gây chèn vào giữa `Issue(...)` hoặc thiếu `seen_boxes`; tôi đối chiếu traceback, nhờ AI làm rõ và sửa. AI ban đầu cũng hiểu nhầm người được tôi đánh dấu ở `img_0030`; tôi phóng to, chỉ rõ hai người bị che khuất để điều chỉnh nhận xét.
 
 **Ghi chú kiểm tra trên Windows:** file `calibrate.py` còn nguyên hash bản đề, nhưng checker dùng đường dẫn `\` để đối chiếu danh sách bảo vệ dùng `/`, nên báo nhầm tham chiếu MANIFEST và data/calib trong file có sẵn. Giữ nguyên checker và file đề; kiểm tra bổ sung chỉ chuẩn hóa cách so đường dẫn trong bộ nhớ, không bỏ điều kiện kiểm tra.
+
+**Tính toàn vẹn bản xuất:** rà soát trước nộp phát hiện Git chuẩn hóa xuống dòng của 7 file nhãn, làm lệch hash trong manifest. Đã cấu hình `.gitattributes` giữ nguyên byte nhãn xuất và đưa lại đúng các file do pipeline sinh ra; không sửa tay nhãn hay manifest.

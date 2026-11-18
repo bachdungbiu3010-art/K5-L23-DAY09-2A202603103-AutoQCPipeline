@@ -1,0 +1,23 @@
+Pre-submission audit summary — 2026-11-18 (Asia/Saigon)
+Student: Lê Ngọc Dũng — 2A202603103
+
+Audit target: staged Git tree a4a64e4c0ebea9635c834c43248b1f847f104434,
+extracted to a separate temporary directory using git archive.
+
+- All 205 exported label byte hashes match manifest.label_sha1.
+- Protected source, tests and provided data remain unchanged.
+- Report numbers, config fingerprint, queue counts and evidence links match.
+- Full test result on snapshot: 79 passed in 74.41s.
+- Core checker with Windows protected-path comparison normalized in memory:
+  0 errors, 1 warning (training skipped with --no-train), exit code 0.
+- Original scripts/check_submission.py was not modified.
+- Original checker on Windows has a known slash/backslash comparison defect;
+  the supplemental result must not be represented as an unmodified Windows run.
+- Main pipeline: Hold, 0 mandatory errors, 38/205 unreviewed warning images.
+- Budget-zero experiment: Rework, 6 mandatory errors, no export.
+- Training result files: absent. Submission is core-only at this point.
+- LMS submission: not performed by this audit.
+
+Fix: preserve generated export label bytes via .gitattributes -text;
+re-stage the original pipeline-generated labels without editing label contents
+or generated manifest values.
