@@ -1,0 +1,8 @@
+Supplemental Windows check: normalize protected-file path comparison only.
+Original checker unchanged; all checking conditions retained.
+pytest: 79 passed in 113.75s (0:01:53)
+kết luận pipeline: Hold - Còn 38/205 ảnh có cảnh báo chưa được duyệt (18.54%), đạt hoặc vượt ngưỡng 10.00%.
+
+CẢNH BÁO: bỏ qua phần train (--no-train): phần train 15 điểm chấm riêng, làm sau khi có Colab
+
+0 lỗi, 1 cảnh báo
