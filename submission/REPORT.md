@@ -49,15 +49,32 @@ Thí nghiệm `python -m pipeline.run --budget 0 --reports work/rep_nb --export-
 Hai hạn chế có bằng chứng: (1) ở ngưỡng đã chọn, recall khung lỏng chỉ 0,20, bỏ sót 4/5 ca chèn trên calib; (2) phash 4 chỉ bắt 4/6 ca gần trùng trên calib. Vì vậy kiểm thử xanh không chứng minh dữ liệu đã sạch. Qua xem 10 ảnh raw, tôi còn ghi nhận thiếu người (ảnh đầu và `img_0030`), nghi gán person vào máy ở `img_0002` và vật thể ở `img_0005`; các xe nhỏ/che khuất cần đối chiếu guideline trước khi tính lỗi.
 
 ## 5. Train: raw vs clean
-**Chưa chạy**: ưu tiên hoàn thiện phần lõi trước khi thực hiện thí nghiệm Colab. Chưa có bằng chứng để kết luận clean giúp model tốt hơn raw.
+Đã chạy đủ 4 lượt trên Colab: `yolo26n.pt`, 20 epoch, seed 0 và 1, batch 16, imgsz 640; JSON ghi thiết bị `0` ở cả 4 lượt. Hai biến thể dùng chung gold_val (40 ảnh) và test (100 ảnh) theo script gốc. Hash cấu hình và manifest của clean khớp bản xuất. Nguồn: [4 JSON gốc và bảng tổng hợp](results/comparison.md), [biểu đồ](results/comparison.png).
+
+| biến thể | #ảnh train | số seed | map50 (TB ± độ lệch) | map50_95 (TB ± độ lệch) | precision (TB ± độ lệch) | recall (TB ± độ lệch) |
+|---|---|---|---|---|---|---|
+| raw | 224 | 2 | 0.726 ± 0.000 | 0.512 ± 0.004 | 0.764 ± 0.061 | 0.649 ± 0.028 |
+| clean | 205 | 2 | 0.700 ± 0.030 | 0.486 ± 0.013 | 0.715 ± 0.073 | 0.615 ± 0.017 |
+
+Chênh mAP50 (clean − raw) = **-0.025**.
+
+Các số ảnh 224/205 là số ảnh dựng vào thư mục train; Ultralytics có thể tự bỏ ảnh/nhãn hỏng của raw. JSON không ghi số ảnh thực dùng sau lọc nên chưa xác minh con số đó từ log.
+
+**Nhận định:** clean có mAP50 trung bình thấp hơn raw khoảng 0,0254 (2,54 điểm phần trăm), cùng cỡ độ lệch chuẩn giữa seed của clean (0,0305). Chênh theo cặp seed 0/1 là −0,0468/−0,0040. Với 2 seed và test 100 ảnh, chưa đủ bằng chứng thống kê để khẳng định mức giảm ổn định; không có bằng chứng clean cải thiện model. Raw hiển thị độ lệch 0,000 do làm tròn; giá trị thực khoảng 0,00021, không phải bằng 0.
+
+AP50 trung bình theo lớp (raw → clean): car 0,7375 → 0,7485; person 0,8220 → 0,8274; truck 0,6484 → 0,5588; bus 0,6949 → 0,6666. Suy giảm tập trung ở truck và bus.
+
+**Giả thuyết và cách kiểm:** (1) raw có 4 ảnh trùng tập test theo intake, có thể làm điểm raw lạc quan; chưa định lượng được tác động. Đánh giá hai mô hình trên tập kiểm định độc lập mới, không dùng kết quả test để chọn lại ngưỡng. (2) clean vẫn Hold, 38/205 ảnh còn cảnh báo và số ảnh ít hơn; lỗi nhãn hoặc biến động các lớp xe có thể làm giảm điểm. Duyệt tiếp nhãn và kiểm phân bố car/truck/bus rồi huấn luyện lại với thêm seed, cùng cấu hình. Không kết luận giả thuyết nào là nguyên nhân đã chứng minh.
 
 ## 6. Quyết định và ghi chú AI/Videcode
 Giữ **Hold**, không tăng ngưỡng hoặc đổi ngân sách chỉ để đạt Release. Cần duyệt và xử lý tiếp cảnh báo tồn đọng, kiểm lại điểm mù; Release chỉ khi không còn lỗi bắt buộc và tỉ lệ ảnh cảnh báo chưa duyệt dưới 10%. CVAT và check thưởng: chưa làm. Repo GitHub public đã được xác minh; đã lưu 7 commit theo nhóm nội dung và đẩy lên. Chưa nộp LMS.
 
-- **Cách dùng AI/Videcode:** tôi cung cấp docstring và yêu cầu AI viết từng nhóm quy tắc cho 4 module, giải thích code, đọc lỗi và phân tích calibration. Sau đó ghép thành hàm đầy đủ; AI hỗ trợ tổng hợp báo cáo từ CSV/JSON.
+- **Cách dùng AI/Videcode:** tôi cung cấp docstring và yêu cầu AI viết từng nhóm quy tắc cho 4 module, giải thích code, đọc lỗi và phân tích calibration. Sau đó ghép thành hàm đầy đủ; AI hỗ trợ tổng hợp báo cáo từ CSV/JSON, kiểm hash của 4 lượt train và tính lại các chỉ số trung bình/độ lệch chuẩn.
 - **Cách kiểm chứng:** tôi nhập/lưu code trong VS Code, chạy kiểm thử từng phần và toàn bộ (79 passed), xem khoảng 10 ảnh, kiểm hai cặp gần trùng và chạy thí nghiệm gate ngân sách 0. Duyệt 80 ảnh trong pipeline là mô phỏng có sẵn, không phải tôi sửa thủ công 80 ảnh.
 - **Sai/thiếu và cách sửa:** hướng dẫn chèn code từng đoạn ban đầu chưa đủ rõ, gây chèn vào giữa `Issue(...)` hoặc thiếu `seen_boxes`; tôi đối chiếu traceback, nhờ AI làm rõ và sửa. AI ban đầu cũng hiểu nhầm người được tôi đánh dấu ở `img_0030`; tôi phóng to, chỉ rõ hai người bị che khuất để điều chỉnh nhận xét.
 
 **Ghi chú kiểm tra trên Windows:** file `calibrate.py` còn nguyên hash bản đề, nhưng checker dùng đường dẫn `\` để đối chiếu danh sách bảo vệ dùng `/`, nên báo nhầm tham chiếu MANIFEST và data/calib trong file có sẵn. Giữ nguyên checker và file đề; kiểm tra bổ sung chỉ chuẩn hóa cách so đường dẫn trong bộ nhớ, không bỏ điều kiện kiểm tra.
 
 **Tính toàn vẹn bản xuất:** rà soát trước nộp phát hiện Git chuẩn hóa xuống dòng của 7 file nhãn, làm lệch hash trong manifest. Đã cấu hình `.gitattributes` giữ nguyên byte nhãn xuất và đưa lại đúng các file do pipeline sinh ra; không sửa tay nhãn hay manifest.
+
+Kiểm tra sau khi bổ sung train: xem [kết quả kiểm đầy đủ trên Windows](evidence/check_full_windows_normalized.txt). Bản rà soát phần lõi trước đó là bằng chứng lịch sử trước khi nhập kết quả train.

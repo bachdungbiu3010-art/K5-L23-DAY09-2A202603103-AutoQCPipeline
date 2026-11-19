@@ -1,0 +1,7 @@
+Full submission check including train results; protected-path comparison normalized in memory for Windows.
+Original checker and all checking conditions retained.
+pytest: 79 passed in 60.21s (0:01:00)
+kết luận pipeline: Hold - Còn 38/205 ảnh có cảnh báo chưa được duyệt (18.54%), đạt hoặc vượt ngưỡng 10.00%.
+
+
+0 lỗi, 0 cảnh báo
